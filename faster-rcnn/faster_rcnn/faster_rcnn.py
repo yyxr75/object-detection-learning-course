@@ -34,14 +34,21 @@ def nms_detections(pred_boxes, scores, nms_thresh, inds=None):
 
 class RPN(nn.Module):
     _feat_stride = [16, ]
-    anchor_scales = [8, 16, 32]
+    # 这东西是干嘛的，是一个一维数组呀，原来是anchor的尺度因子，每一个pixel给出了9个proposal的bbox
+    anchor_scales = [8, 16, 32] 
 
     def __init__(self):
         super(RPN, self).__init__()
-
+        # features 网络是vgg-16
         self.features = VGG16(bn=False)
+        # 接一个conv1 512*512
         self.conv1 = Conv2d(512, 512, 3, same_padding=True)
+        # 打分卷积 512*(self.anchor_scales：?这个是啥)*3*2，1*1 kernal,[512->3*3*2]
+        # 现在理解了，是anchor的scale参数，意味着每个点位有3*3的anchor
+        # 但是现在很奇怪，为什么是*2呢，如果是二分类，那么*1=0/1就可以了，如果不是，那也是*1=0.8971之类的
         self.score_conv = Conv2d(512, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
+        # bbox卷积 512*(self.anchor_scales：?这个是啥)*3*4，1*1 kernal,[512->3*3*4]
+        # 这样来看，这里的*4=(x_leftup,y_leftup,x_rightdown,y_rightdown)是没有问题的
         self.bbox_conv = Conv2d(512, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
 
         # loss
@@ -53,23 +60,37 @@ class RPN(nn.Module):
         return self.cross_entropy + self.loss_box * 10
 
     def forward(self, im_data, im_info, gt_boxes=None, gt_ishard=None, dontcare_areas=None):
+        # 图像数据放到cuda里
         im_data = network.np_to_variable(im_data, is_cuda=True)
+        # 维度换一下顺序（为什么？是不是调换成结构[batch_size, channels, height, width]。
+        # 但是这里放到cuda里的数据，已经成了tensor了，还能用permute这种操作吗？）
         im_data = im_data.permute(0, 3, 1, 2)
+        # 数据进vgg-16进行前向传播计算，算特征
         features = self.features(im_data)
-
+        # 进一个简单的con2d做一次卷积计算,512->512
         rpn_conv1 = self.conv1(features)
 
         # rpn score
         rpn_cls_score = self.score_conv(rpn_conv1)
+        # 数据本身没变，但是展现给我们的视角(view)变了（什么意思？)
+        # 操作是把数据维度替换成[0,d,(channel*height)/d,3]，这里就是替换成了[0,2,(channel*height)/2,width]
+        # 其中channel=18
+        # 为什么把这两个维度做操作？没道理呀。
         rpn_cls_score_reshape = self.reshape_layer(rpn_cls_score, 2)
+        # 非线性映射
         rpn_cls_prob = F.softmax(rpn_cls_score_reshape)
+        # 这里又进行reshape，变成了[0,18,(height*channel)/18,width]，很奇怪，没什么道理呀。
         rpn_cls_prob_reshape = self.reshape_layer(rpn_cls_prob, len(self.anchor_scales)*3*2)
 
+        # 这些reshape好像是一个caffe还是blob库的遗留问题？
+        
         # rpn boxes
+        # bbox卷积网络，输入特征
         rpn_bbox_pred = self.bbox_conv(rpn_conv1)
 
         # proposal layer
         cfg_key = 'TRAIN' if self.training else 'TEST'
+        # 现在都进入proposal layer进行框的是否和位置回归，那这里很关键呀
         rois = self.proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info,
                                    cfg_key, self._feat_stride, self.anchor_scales)
 
@@ -104,6 +125,7 @@ class RPN(nn.Module):
 
         return rpn_cross_entropy, rpn_loss_box
 
+    # staticmethod用于修饰类中的方法,使其可以在不创建类实例的情况下调用方法，这样做的好处是执行效率比较高。
     @staticmethod
     def reshape_layer(x, d):
         input_shape = x.size()
@@ -215,6 +237,10 @@ class FasterRCNN(nn.Module):
         return self.cross_entropy + self.loss_box * 10
 
     def forward(self, im_data, im_info, gt_boxes=None, gt_ishard=None, dontcare_areas=None):
+        # 先用RPN网络提取特征和推荐区域ROIs，具体提取方法去看上面RPN的代码
+        # 疑问：这个调用不是初始化吗，为什么会起到rpn.forward函数的功能，解释：
+        # 利用Python的语言特性，y = model(x)是调用了对象model的__call__方法，
+        # 而nn.Module把__call__方法实现为类对象的forward函数，所以任意继承了nn.Module的类对象都可以这样简写来调用forward函数。
         features, rois = self.rpn(im_data, im_info, gt_boxes, gt_ishard, dontcare_areas)
 
         if self.training:

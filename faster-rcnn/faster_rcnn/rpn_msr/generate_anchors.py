@@ -40,9 +40,13 @@ def generate_anchors(base_size=16, ratios=[0.5, 1, 2],
     Generate anchor (reference) windows by enumerating aspect ratios X
     scales wrt a reference (0, 0, 15, 15) window.
     """
-
+    # 输入的scales=[8,16,32]
+    # base_anchor=[1,1,16,16]-1=[0,0,15,15]
     base_anchor = np.array([1, 1, base_size, base_size]) - 1
+    # 有三个ratio长宽比
     ratio_anchors = _ratio_enum(base_anchor, ratios)
+    # 有三个scale尺度因子
+    # 最后组合生成3*3=9个anchors
     anchors = np.vstack([_scale_enum(ratio_anchors[i, :], scales)
                          for i in range(ratio_anchors.shape[0])])
     return anchors
@@ -54,6 +58,7 @@ def _whctrs(anchor):
 
     w = anchor[2] - anchor[0] + 1
     h = anchor[3] - anchor[1] + 1
+    # 求得的是中心点，ctr=center
     x_ctr = anchor[0] + 0.5 * (w - 1)
     y_ctr = anchor[1] + 0.5 * (h - 1)
     return w, h, x_ctr, y_ctr
@@ -77,6 +82,7 @@ def _ratio_enum(anchor, ratios):
     Enumerate a set of anchors for each aspect ratio wrt an anchor.
     """
 
+    # 求到anchor的中心点和长宽
     w, h, x_ctr, y_ctr = _whctrs(anchor)
     size = w * h
     size_ratios = size / ratios
@@ -91,6 +97,7 @@ def _scale_enum(anchor, scales):
     """
 
     w, h, x_ctr, y_ctr = _whctrs(anchor)
+    # 这里的scales=[8,16,32]
     ws = w * scales
     hs = h * scales
     anchors = _mkanchors(ws, hs, x_ctr, y_ctr)

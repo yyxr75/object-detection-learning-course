@@ -19,6 +19,8 @@ class VGG16(nn.Module):
         self.conv2 = nn.Sequential(Conv2d(64, 128, 3, same_padding=True, bn=bn),
                                    Conv2d(128, 128, 3, same_padding=True, bn=bn),
                                    nn.MaxPool2d(2))
+        
+        # 设置不要保存梯度中间量(不明白是干嘛)
         network.set_trainable(self.conv1, requires_grad=False)
         network.set_trainable(self.conv2, requires_grad=False)
 

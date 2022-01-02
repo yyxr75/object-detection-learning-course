@@ -2,8 +2,8 @@ import sys
 sys.path.append('./faster_rcnn')
 import cv2
 import numpy as np
-from faster_rcnn import network  #it means the network is inside it, lets see the content
-from faster_rcnn.faster_rcnn import FasterRCNN
+from faster_rcnn import network  # 这里头有最基本的从torch.nn封装而来的网络结构，nn.conv2d + nn.linear
+from faster_rcnn.faster_rcnn import FasterRCNN # 这里直接导入了FasterRCNN的类定义，那么去看看，它是怎样的网络
 from faster_rcnn.utils.timer import Timer
 
 

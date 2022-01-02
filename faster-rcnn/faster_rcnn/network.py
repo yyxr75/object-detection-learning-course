@@ -5,16 +5,20 @@ import numpy as np
 
 
 class Conv2d(nn.Module):
-# i guess it represent a 2d convolutional network
-# it calls the torch lib to help builing the framework
+    #               输入通道,图像通道数  输出通道？    核尺寸       扫描步长   非线性激活函数  padding边缘补0 
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, relu=True, same_padding=False, bn=False):
+        # 继承了torch.nn.Module的初始化函数，另外加一些自己的初始化参数
         super(Conv2d, self).__init__()
-        # this class
+        # 语法等效于：x=(if)?a:b
         padding = int((kernel_size - 1) / 2) if same_padding else 0
+        # 2d卷积操作函数
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding=padding)
+        # 这个没看懂呢，怎么做的归一化，还说需要连接在每一个卷积操作后面
         self.bn = nn.BatchNorm2d(out_channels, eps=0.001, momentum=0, affine=True) if bn else None
+        # 激活函数relu
         self.relu = nn.ReLU(inplace=True) if relu else None
 
+    # 这就是说把输入卷一下，如果有必要就归一化一下
     def forward(self, x):
         x = self.conv(x)
         if self.bn is not None:
@@ -23,19 +27,24 @@ class Conv2d(nn.Module):
             x = self.relu(x)
         return x
 
-
+# fully connection layer全连接层
 class FC(nn.Module):
     def __init__(self, in_features, out_features, relu=True):
         super(FC, self).__init__()
+        # 全连接层，arguement是输入和输出的大小，具体是啥的size？
         self.fc = nn.Linear(in_features, out_features)
         self.relu = nn.ReLU(inplace=True) if relu else None
 
+    # 就是说，网络定义之后都会有一个forward来帮你计算
     def forward(self, x):
         x = self.fc(x)
         if self.relu is not None:
             x = self.relu(x)
         return x
 
+#
+# 不过这里为什么要分开这样写，难道你之后写网络的时候再来单独调吗？可能真的是。
+#
 
 def save_net(fname, net):
     import h5py
@@ -91,7 +100,7 @@ def np_to_variable(x, is_cuda=True, dtype=torch.FloatTensor):
         v = v.cuda()
     return v
 
-
+# i dont get it，我没明白。卷积核的参数是网络的关键
 def set_trainable(model, requires_grad):
     for param in model.parameters():
         param.requires_grad = requires_grad

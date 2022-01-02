@@ -34,6 +34,7 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
     ----------
     rpn_cls_prob_reshape: (1 , H , W , Ax2) outputs of RPN, prob of bg or fg
                          NOTICE: the old version is ordered by (1, H, W, 2, A) !!!!
+                         所以这里A就是anchor的意思
     rpn_bbox_pred: (1 , H , W , Ax4), rgs boxes output of RPN
     im_info: a list of [image_height, image_width, scale_ratios]
     cfg_key: 'TRAIN' or 'TEST'
@@ -59,6 +60,8 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
     #layer_params = yaml.load(self.param_str_)
 
     """
+
+    # 这里直接输出9个anchors，暂时还与pixel无关呀
     _anchors = generate_anchors(scales=np.array(anchor_scales))
     _num_anchors = _anchors.shape[0]
     # rpn_cls_prob_reshape = np.transpose(rpn_cls_prob_reshape,[0,3,1,2]) #-> (1 , 2xA, H , W)
@@ -72,13 +75,19 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
         'Only single item batches are supported'
     # cfg_key = str(self.phase) # either 'TRAIN' or 'TEST'
     # cfg_key = 'TEST'
+    # 在这个地方要读一些config来控制了
+    # 在RPN采用NMS之前的保留的框个数（按分从高到低保留）：12000
     pre_nms_topN = cfg[cfg_key].RPN_PRE_NMS_TOP_N
+    # 在RPN采用NMS之后的保留的框个数（按分从高到低保留）：2000
     post_nms_topN = cfg[cfg_key].RPN_POST_NMS_TOP_N
+    # nms的阈值：0.7
     nms_thresh = cfg[cfg_key].RPN_NMS_THRESH
+    # 16
     min_size = cfg[cfg_key].RPN_MIN_SIZE
 
     # the first set of _num_anchors channels are bg probs
     # the second set are the fg probs, which we want
+    # 这就是说，分在后面，1/0在前面
     scores = rpn_cls_prob_reshape[:, _num_anchors:, :, :]
     bbox_deltas = rpn_bbox_pred
     # im_info = bottom[2].data[0, :]
@@ -94,9 +103,14 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
         print( 'score map size: {}'.format(scores.shape))
 
     # Enumerate all shifts
+    # 下采样的步长，当前图与原图的倍数，16，跟vgg16息息相关
+    # 这里的意思是从0到最大的长款的shift都是允许的
     shift_x = np.arange(0, width) * _feat_stride
     shift_y = np.arange(0, height) * _feat_stride
     shift_x, shift_y = np.meshgrid(shift_x, shift_y)
+    # 这里就生成了一个组合shift，可以在图片上乱移动。这也是穷举shifts呀
+    # 搞这么多shift竖着排干嘛？shifts.shape=[width*height,4]
+    # 就是这样穷举所有的pixel
     shifts = np.vstack((shift_x.ravel(), shift_y.ravel(),
                         shift_x.ravel(), shift_y.ravel())).transpose()
 
@@ -106,10 +120,13 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
     # cell K shifts (K, 1, 4) to get
     # shift anchors (K, A, 4)
     # reshape to (K*A, 4) shifted anchors
-    A = _num_anchors
-    K = shifts.shape[0]
+
+    A = _num_anchors # A=9，9个anchor
+    K = shifts.shape[0] # K=width*height
+    # 组合成box和shifts的(k*A,4)
     anchors = _anchors.reshape((1, A, 4)) + \
               shifts.reshape((1, K, 4)).transpose((1, 0, 2))
+    # 现在这个anchor的穷举就相当多了，width*height*9个
     anchors = anchors.reshape((K * A, 4))
 
     # Transpose and reshape predicted bbox transformations to get them
