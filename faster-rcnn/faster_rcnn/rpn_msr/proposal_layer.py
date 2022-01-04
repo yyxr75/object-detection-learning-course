@@ -87,7 +87,7 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
 
     # the first set of _num_anchors channels are bg probs
     # the second set are the fg probs, which we want
-    # 这就是说，分在后面，1/0在前面
+    # 这就是说，*2通道里，分在后面，1/0在前面
     scores = rpn_cls_prob_reshape[:, _num_anchors:, :, :]
     bbox_deltas = rpn_bbox_pred
     # im_info = bottom[2].data[0, :]
@@ -109,6 +109,7 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
     shift_y = np.arange(0, height) * _feat_stride
     shift_x, shift_y = np.meshgrid(shift_x, shift_y)
     # 这里就生成了一个组合shift，可以在图片上乱移动。这也是穷举shifts呀
+    # 按照down sampling的尺度进行穷举
     # 搞这么多shift竖着排干嘛？shifts.shape=[width*height,4]
     # 就是这样穷举所有的pixel
     shifts = np.vstack((shift_x.ravel(), shift_y.ravel(),
@@ -136,6 +137,7 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
     # transpose to (1, H, W, 4 * A)
     # reshape to (1 * H * W * A, 4) where rows are ordered by (h, w, a)
     # in slowest to fastest order
+    # 这个东西是bbox网络输出来的box，[batch size, height, width, 9*4]
     bbox_deltas = bbox_deltas.transpose((0, 2, 3, 1)).reshape((-1, 4))
 
     # Same story for the scores:
@@ -146,13 +148,19 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
     scores = scores.transpose((0, 2, 3, 1)).reshape((-1, 1))
 
     # Convert anchors into proposals via bbox transformations
+    # 等于是说，预测出来的bbox是在anchor附近的微调dx, dy
+    # 那么proposal就是anchor+pred_bbox
+    # 能起到在每个位置都有delta，并且可以随着迭代逼近真值吗？
+    # 是不是这就是anchor based的命名原因
     proposals = bbox_transform_inv(anchors, bbox_deltas)
 
     # 2. clip predicted boxes to image
+    # 把框框剪一下
     proposals = clip_boxes(proposals, im_info[:2])
 
     # 3. remove predicted boxes with either height or width < threshold
     # (NOTE: convert min_size to input image scale stored in im_info[2])
+    # 移除过小框
     keep = _filter_boxes(proposals, min_size * im_info[2])
     proposals = proposals[keep, :]
     scores = scores[keep]
@@ -164,6 +172,7 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
 
     # 4. sort all (proposal, score) pairs by score from highest to lowest
     # 5. take top pre_nms_topN (e.g. 6000)
+    # ravel方法，把数据变成1维
     order = scores.ravel().argsort()[::-1]
     if pre_nms_topN > 0:
         order = order[:pre_nms_topN]

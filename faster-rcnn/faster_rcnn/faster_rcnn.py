@@ -85,12 +85,13 @@ class RPN(nn.Module):
         # 这些reshape好像是一个caffe还是blob库的遗留问题？
         
         # rpn boxes
-        # bbox卷积网络，输入特征
+        # bbox卷积网络，输入的是delta_bbox
         rpn_bbox_pred = self.bbox_conv(rpn_conv1)
 
         # proposal layer
         cfg_key = 'TRAIN' if self.training else 'TEST'
         # 现在都进入proposal layer进行框的是否和位置回归，那这里很关键呀
+        # 现在看完了，proposal layer就是要输出候选框
         rois = self.proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info,
                                    cfg_key, self._feat_stride, self.anchor_scales)
 
