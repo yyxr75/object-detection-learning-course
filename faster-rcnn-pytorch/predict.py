@@ -7,7 +7,7 @@ import time
 import cv2
 import numpy as np
 from PIL import Image
-
+import matplotlib.pyplot as plt
 from frcnn import FRCNN
 
 if __name__ == "__main__":
@@ -58,6 +58,7 @@ if __name__ == "__main__":
         '''
         while True:
             img = input('Input image filename:')
+            # import pdb;pdb.set_trace()
             try:
                 image = Image.open(img)
             except:
@@ -65,7 +66,9 @@ if __name__ == "__main__":
                 continue
             else:
                 r_image = frcnn.detect_image(image)
-                r_image.show()
+                plt.imshow(r_image)
+                plt.show()
+                # r_image.show()
 
     elif mode == "video":
         capture=cv2.VideoCapture(video_path)
