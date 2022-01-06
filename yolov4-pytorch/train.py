@@ -173,6 +173,7 @@ if __name__ == "__main__":
     #   提示OOM或者显存不足请调小Batch_size
     #------------------------------------------------------#
     if True:
+        # 初始化一些训练参数
         batch_size  = Freeze_batch_size
         lr          = Freeze_lr
         start_epoch = Init_Epoch
@@ -183,13 +184,13 @@ if __name__ == "__main__":
         
         if epoch_step == 0 or epoch_step_val == 0:
             raise ValueError("数据集过小，无法进行训练，请扩充数据集。")
-        
+        # 初始化lr_scheduler
         optimizer       = optim.Adam(model_train.parameters(), lr, weight_decay = 5e-4)
         if Cosine_lr:
             lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5, eta_min=1e-5)
         else:
             lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.94)
-
+        # load 数据
         train_dataset   = YoloDataset(train_lines, input_shape, num_classes, mosaic=mosaic, train = True)
         val_dataset     = YoloDataset(val_lines, input_shape, num_classes, mosaic=False, train = False)
         gen             = DataLoader(train_dataset, shuffle = True, batch_size = batch_size, num_workers = num_workers, pin_memory=True,
