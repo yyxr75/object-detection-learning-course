@@ -6,7 +6,7 @@ from utils.utils import get_lr
 def fit_one_epoch(model_train, model, yolo_loss, loss_history, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, Epoch, cuda):
     loss        = 0
     val_loss    = 0
-
+    # 告诉模型正处于训练模式。有什么用吗？
     model_train.train()
     print('Start Train')
     with tqdm(total=epoch_step,desc=f'Epoch {epoch + 1}/{Epoch}',postfix=dict,mininterval=0.3) as pbar:
@@ -37,6 +37,10 @@ def fit_one_epoch(model_train, model, yolo_loss, loss_history, optimizer, epoch,
             #   计算损失
             #----------------------#
             for l in range(len(outputs)):
+                # 那么就是说这里的outputs是输入的图片，是呀就是前向传播算出来的结果
+                # 输入的是计算yolo_loss的对象，这里会调用forward函数
+                # 由于输出了三层结果，因此要算三个loss，最后又是直接都加起来，目标就是
+                # 把三层的参数都回归到最好
                 loss_item, num_pos = yolo_loss(l, outputs[l], targets)
                 loss_value_all  += loss_item
                 num_pos_all     += num_pos
@@ -55,7 +59,7 @@ def fit_one_epoch(model_train, model, yolo_loss, loss_history, optimizer, epoch,
             pbar.update(1)
 
     print('Finish Train')
-
+    # 告诉模型正在评估模式，有什么用吗？
     model_train.eval()
     print('Start Validation')
     with tqdm(total=epoch_step_val, desc=f'Epoch {epoch + 1}/{Epoch}',postfix=dict,mininterval=0.3) as pbar:

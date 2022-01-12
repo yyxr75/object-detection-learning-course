@@ -125,7 +125,37 @@ if __name__ == "__main__":
     #----------------------------------------------------#
     #   获取classes和anchor
     #----------------------------------------------------#
+    # aeroplane
+    # bicycle
+    # bird
+    # boat
+    # bottle
+    # bus
+    # car
+    # cat
+    # chair
+    # cow
+    # diningtable
+    # dog
+    # horse
+    # motorbike
+    # person
+    # pottedplant
+    # sheep
+    # sofa
+    # train
+    # tvmonitor
+    # 总共20个类别
     class_names, num_classes = get_classes(classes_path)
+    # 12, 16,  19, 36,  40, 28,  36, 75,  76, 55,  72, 146,  142, 110,  192, 243,  459, 401
+    # 总共18个anchor，全部都是height 和 width
+    #-----------------------------------------------------------#
+    #   13x13的特征层对应的anchor是[142, 110],[192, 243],[459, 401]
+    #     |*2
+    #   26x26的特征层对应的anchor是[36, 75],[76, 55],[72, 146]
+    #     |*2
+    #   52x52的特征层对应的anchor是[12, 16],[19, 36],[40, 28]
+    #-----------------------------------------------------------#
     anchors, num_anchors     = get_anchors(anchors_path)
 
     #------------------------------------------------------#
@@ -144,13 +174,14 @@ if __name__ == "__main__":
         pretrained_dict = {k: v for k, v in pretrained_dict.items() if np.shape(model_dict[k]) == np.shape(v)}
         model_dict.update(pretrained_dict)
         model.load_state_dict(model_dict)
-
+    # 模型是yolo body, model.train
     model_train = model.train()
     if Cuda:
+        # 多GPU训练，argument: module, device_ids, output_device
         model_train = torch.nn.DataParallel(model)
         cudnn.benchmark = True
         model_train = model_train.cuda()
-
+    # 这里仅仅做一个初始化操作，并不进入forward里
     yolo_loss    = YOLOLoss(anchors, num_classes, input_shape, Cuda, anchors_mask, label_smoothing)
     loss_history = LossHistory("logs/")
 
