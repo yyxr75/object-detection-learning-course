@@ -51,6 +51,7 @@ class AnchorTargetCreator(object):
     def __call__(self, bbox, anchor):
         argmax_ious, label = self._create_label(anchor, bbox)
         if (label > 0).any():
+            # 意思是
             loc = bbox2loc(anchor, bbox[argmax_ious])
             return loc, label
         else:
@@ -247,6 +248,7 @@ class FasterRCNNTrainer(nn.Module):
         # -------------------------------------------------- #
         #   利用rpn网络获得调整参数、得分、建议框、先验框
         # -------------------------------------------------- #
+        # feature 用rpn网络去提rpn结果
         rpn_locs, rpn_scores, rois, roi_indices, anchor = self.faster_rcnn.rpn(base_feature, img_size, scale)
 
         rpn_loc_loss_all, rpn_cls_loss_all, roi_loc_loss_all, roi_cls_loss_all = 0, 0, 0, 0
@@ -264,6 +266,7 @@ class FasterRCNNTrainer(nn.Module):
             #   gt_rpn_loc      [num_anchors, 4]
             #   gt_rpn_label    [num_anchors, ]
             # -------------------------------------------------- #
+            # 计算当前anchor与真值之间的location offset
             gt_rpn_loc, gt_rpn_label    = self.anchor_target_creator(bbox, anchor)
             gt_rpn_loc                  = torch.Tensor(gt_rpn_loc)
             gt_rpn_label                = torch.Tensor(gt_rpn_label).long()
@@ -275,9 +278,10 @@ class FasterRCNNTrainer(nn.Module):
             # -------------------------------------------------- #
             #   分别计算建议框网络的回归损失和分类损失
             # -------------------------------------------------- #
+            # 用rpn得到的location offset与真实location offset计算loss
             rpn_loc_loss = self._fast_rcnn_loc_loss(rpn_loc, gt_rpn_loc, gt_rpn_label, self.rpn_sigma)
             rpn_cls_loss = F.cross_entropy(rpn_score, gt_rpn_label, ignore_index=-1)
-  
+
             # ------------------------------------------------------ #
             #   利用真实框和建议框获得classifier网络应该有的预测结果
             #   获得三个变量，分别是sample_roi, gt_roi_loc, gt_roi_label
@@ -285,18 +289,19 @@ class FasterRCNNTrainer(nn.Module):
             #   gt_roi_loc      [n_sample, 4]
             #   gt_roi_label    [n_sample, ]
             # ------------------------------------------------------ #
+            
             sample_roi, gt_roi_loc, gt_roi_label = self.proposal_target_creator(roi, bbox, label, self.loc_normalize_std)
             sample_roi          = torch.Tensor(sample_roi)
             gt_roi_loc          = torch.Tensor(gt_roi_loc)
             gt_roi_label        = torch.Tensor(gt_roi_label).long()
             sample_roi_index    = torch.zeros(len(sample_roi))
-            
+
             if feature.is_cuda:
                 sample_roi          = sample_roi.cuda()
                 sample_roi_index    = sample_roi_index.cuda()
                 gt_roi_loc          = gt_roi_loc.cuda()
                 gt_roi_label        = gt_roi_label.cuda()
-
+            # 在feature第0维增加一个维度，把feature扔进head里，做的就是roi pooling操作
             roi_cls_loc, roi_score = self.faster_rcnn.head(torch.unsqueeze(feature, 0), sample_roi, sample_roi_index, img_size)
 
             # ------------------------------------------------------ #
@@ -319,14 +324,22 @@ class FasterRCNNTrainer(nn.Module):
             
         losses = [rpn_loc_loss_all/n, rpn_cls_loss_all/n, roi_loc_loss_all/n, roi_cls_loss_all/n]
         losses = losses + [sum(losses)]
+        # 我都不知道算那么些干嘛，你本来生成的rpn框就是要做操作再变成少量的roi框，现在你把大家都算一遍干嘛？
+        # 是roi操作里有参数需要调整吗？
         return losses
 
     def train_step(self, imgs, bboxes, labels, scale):
         self.optimizer.zero_grad()
+<<<<<<< HEAD
         start_time = time.time()
         losses = self.forward(imgs, bboxes, labels, scale)
         time1 = time.time()
         print('forward time: {}'.format(time1-start_time))
+=======
+
+        losses = self.forward(imgs, bboxes, labels, scale)
+        # 这就是反向传播吗
+>>>>>>> 309e4c4cb016aeeb1247ab2aceb3c0804cbab6af
         losses[-1].backward()
         time2 = time.time()
         print('backward time: {}'.format(time2-time1))

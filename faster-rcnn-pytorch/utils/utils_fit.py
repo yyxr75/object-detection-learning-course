@@ -23,7 +23,7 @@ def fit_one_epoch(model, train_util, loss_history, optimizer, epoch, epoch_step,
                 if cuda:
                     images = images.cuda()
             rpn_loc, rpn_cls, roi_loc, roi_cls, total = train_util.train_step(images, boxes, labels, 1)
-            total_loss      += total.item()
+            total_loss      += total.item()    # 把以下的loss全加起来
             rpn_loc_loss    += rpn_loc.item()
             rpn_cls_loss    += rpn_cls.item()
             roi_loc_loss    += roi_loc.item()

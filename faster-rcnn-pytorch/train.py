@@ -133,6 +133,7 @@ if __name__ == "__main__":
     
     model = FasterRCNN(num_classes, anchor_scales = anchors_size, backbone = backbone, pretrained = pretrained)
     if not pretrained:
+        # 初始化网络参数，默认是normal，随机生成一些均值为0，方差为不知道的随机数
         weights_init(model)
     if model_path != '':
         #------------------------------------------------------#

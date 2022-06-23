@@ -64,6 +64,8 @@ if __name__ == "__main__":
                 print('Open Error! Try again!')
                 continue
             else:
+                # 直接把框框花在图像上，还写了字，输出一张带框图
+                # 采用的是yolo训练输出的三个层的
                 r_image = yolo.detect_image(image)
                 plt.imshow(r_image)
                 plt.show()

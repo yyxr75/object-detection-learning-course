@@ -160,6 +160,7 @@ class RegionProposalNetwork(nn.Module):
         #   进行softmax概率计算，每个先验框只有两个判别结果
         #   内部包含物体或者内部不包含物体，rpn_softmax_scores[:, :, 1]的内容为包含物体的概率
         #--------------------------------------------------------------------------------------#
+        # 你看这里哈，过一下softmax来回归存在概率，有点意思。
         rpn_softmax_scores  = F.softmax(rpn_scores, dim=-1)
         rpn_fg_scores       = rpn_softmax_scores[:, :, 1].contiguous()
         rpn_fg_scores       = rpn_fg_scores.view(n, -1)
@@ -179,7 +180,11 @@ class RegionProposalNetwork(nn.Module):
 
         rois        = torch.cat(rois, dim=0)
         roi_indices = torch.cat(roi_indices, dim=0)
-
+        # 返回的都是啥：
+        # rpn_locs：rpn预测结果
+        # rpn_scores：rpn分
+        # rois：经过：裁剪、移除过小、分排序和NMS后输出的结果
+        # ros_indices：索引
         return rpn_locs, rpn_scores, rois, roi_indices, anchor
 
 
