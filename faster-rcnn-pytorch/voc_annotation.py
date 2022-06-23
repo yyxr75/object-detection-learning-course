@@ -60,6 +60,7 @@ if __name__ == "__main__":
         saveBasePath    = os.path.join(VOCdevkit_path, 'VOC2007/ImageSets/Main')
         temp_xml        = os.listdir(xmlfilepath)
         total_xml       = []
+        import pdb;pdb.set_trace()
         for xml in temp_xml:
             if xml.endswith(".xml"):
                 total_xml.append(xml)
@@ -98,6 +99,7 @@ if __name__ == "__main__":
     if annotation_mode == 0 or annotation_mode == 2:
         print("Generate 2007_train.txt and 2007_val.txt for train.")
         for year, image_set in VOCdevkit_sets:
+            # import pdb;pdb.set_trace()
             image_ids = open(os.path.join(VOCdevkit_path, 'VOC%s/ImageSets/Main/%s.txt'%(year, image_set)), encoding='utf-8').read().strip().split()
             list_file = open('%s_%s.txt'%(year, image_set), 'w', encoding='utf-8')
             for image_id in image_ids:

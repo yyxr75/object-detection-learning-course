@@ -115,6 +115,7 @@ class YOLOLoss(nn.Module):
         #--------------------------------#
         #   获得图片数量，特征层的高和宽
         #--------------------------------#
+        import pdb;pdb.set_trace()
         bs      = input.size(0)
         in_h    = input.size(2)
         in_w    = input.size(3)
@@ -160,10 +161,12 @@ class YOLOLoss(nn.Module):
         #-----------------------------------------------#
         #   种类置信度
         #-----------------------------------------------#
+        # 这个sigmoid不太对吧，我觉得应该取softmax
         pred_cls = torch.sigmoid(prediction[..., 5:])
 
         #-----------------------------------------------#
         #   获得网络应该有的预测结果
+        #   计算哪些anchor框与真实框最接近
         #-----------------------------------------------#
         y_true, noobj_mask, box_loss_scale = self.get_target(l, targets, scaled_anchors, in_h, in_w)
 
@@ -173,7 +176,6 @@ class YOLOLoss(nn.Module):
         #   作为负样本不合适
         #----------------------------------------------------------------#
         noobj_mask, pred_boxes = self.get_ignore(l, x, y, h, w, targets, scaled_anchors, in_h, in_w, noobj_mask)
-
         if self.cuda:
             y_true          = y_true.cuda()
             noobj_mask      = noobj_mask.cuda()
@@ -188,6 +190,8 @@ class YOLOLoss(nn.Module):
         #---------------------------------------------------------------#
         #   计算预测结果和真实结果的CIOU
         #----------------------------------------------------------------#
+        import  pdb;pdb.set_trace()
+        # 这里只算某些预测与真实值之间的ciou值
         ciou        = (1 - self.box_ciou(pred_boxes[y_true[..., 4] == 1], y_true[..., :4][y_true[..., 4] == 1])) * box_loss_scale[y_true[..., 4] == 1]
         loss_loc    = torch.sum(ciou)
         #-----------------------------------------------------------#
@@ -232,6 +236,7 @@ class YOLOLoss(nn.Module):
         #-----------------------------------------------------------#
         #   计算交的面积
         #-----------------------------------------------------------#
+        # import pdb;pdb.set_trace()
         max_xy  = torch.min(box_a[:, 2:].unsqueeze(1).expand(A, B, 2), box_b[:, 2:].unsqueeze(0).expand(A, B, 2))
         min_xy  = torch.max(box_a[:, :2].unsqueeze(1).expand(A, B, 2), box_b[:, :2].unsqueeze(0).expand(A, B, 2))
         inter   = torch.clamp((max_xy - min_xy), min=0)

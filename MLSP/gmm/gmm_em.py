@@ -1,0 +1,58 @@
+# -*- coding:utf-8 -*-
+import numpy as np
+from scipy.stats import multivariate_normal
+
+def scale_data(Y):
+    #Y: [N*D]
+    #N: number of data points
+    #D: dimension of data
+    X = np.zeros(Y.shape)
+    for i in range(Y.shape[1]):
+        max_ = Y[:, i].max()
+        min_ = Y[:, i].min()
+        X[:, i] = (Y[:, i] - min_) / (max_ - min_)
+
+    return X
+
+def gaussian(X, mu_k, cov_k):
+    norm = multivariate_normal(mean=mu_k, cov=cov_k)
+    return norm.pdf(X)
+
+def gmm_em(Y, K, iters):
+    #X = scale_data(Y)
+    X = Y
+    N, D = X.shape
+    #Init
+    alpha = np.ones((K,1)) / K          #initially evenly distributed
+    mu = np.random.rand(K, D)           #initially random mean
+    cov = np.array([np.eye(D)] * K)     #intially diagonal covariance
+
+    omega = np.zeros((N, K))
+
+    for i in range(iters):
+
+        #E-Step
+        p = np.zeros((N, K))
+        for k in range(K):
+            # 这里就是生成一个参数随机的GM
+            # k=3是高斯个数
+            # mu:[3,2] 3个随机均值点
+            # X: 采样点位置
+            # p: 每个采样点的在不同随机高斯分布下的值 = 其实就是本文预测的gaussian heatmap
+            p[:, k] = alpha[k] * gaussian(X, mu[k], cov[k])
+        # 限制每个点在三个高斯分布下的函数值和为1
+        sumP = np.sum(p, axis=1)
+        omega = p / sumP[:, None]
+        import pdb;pdb.set_trace()
+        #M-Step
+        sumOmega = np.sum(omega, axis=0)  # [K]
+        alpha = sumOmega / N              # alpha_k = sum(omega_k) / N
+        for k in range(K):
+            omegaX = np.multiply(X, omega[:, [k]])        # omega_k*X [N*D]
+            mu[k] = np.sum(omegaX, axis=0) / sumOmega[k]  # mu[k]  = sum(omega_k*X) / sum(omega_k) : [D]
+
+            X_mu_k = np.subtract(X, mu[k])                                         # (X - mu_k) : [N*D] - [D] = [N*D]
+            omega_X_mu_k = np.multiply(omega[:, [k]], X_mu_k)                      # omega(X-mu_k) : [N*D]
+            cov[k] = np.dot(np.transpose(omega_X_mu_k), X_mu_k) / sumOmega[k]      # sum(omega_i * (X_i-mu_k).T*(X_i-mu_k))  [D*D]
+
+    return omega, alpha, mu, cov

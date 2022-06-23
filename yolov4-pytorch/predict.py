@@ -7,7 +7,7 @@ import time
 import cv2
 import numpy as np
 from PIL import Image
-
+import matplotlib.pyplot as plt
 from yolo import YOLO
 
 if __name__ == "__main__":
@@ -58,12 +58,15 @@ if __name__ == "__main__":
             img = input('Input image filename:')
             try:
                 image = Image.open(img)
+                plt.imshow(image)
+                plt.show()
             except:
                 print('Open Error! Try again!')
                 continue
             else:
                 r_image = yolo.detect_image(image)
-                r_image.show()
+                plt.imshow(r_image)
+                plt.show()
 
     elif mode == "video":
         capture = cv2.VideoCapture(video_path)

@@ -11,7 +11,9 @@ import matplotlib.pyplot as plt
 from frcnn import FRCNN
 
 if __name__ == "__main__":
-    frcnn = FRCNN()
+    frcnn = FRCNN(model_path='logs/ep050-loss0.772-val_loss0.823.pth', \
+                  confidence=0.5, \
+                  nms_iou=0.3)
     #----------------------------------------------------------------------------------------------------------#
     #   mode用于指定测试的模式：
     #   'predict'表示单张图片预测，如果想对预测过程进行修改，如保存图片，截取对象等，可以先看下方详细的注释
@@ -67,6 +69,7 @@ if __name__ == "__main__":
             else:
                 r_image = frcnn.detect_image(image)
                 plt.imshow(r_image)
+                plt.title("after-trained model predict result")
                 plt.show()
                 # r_image.show()
 

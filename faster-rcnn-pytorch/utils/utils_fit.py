@@ -2,7 +2,8 @@ import torch
 from tqdm import tqdm
 
 from utils.utils import get_lr
-        
+
+
 def fit_one_epoch(model, train_util, loss_history, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, Epoch, cuda):
     total_loss = 0
     rpn_loc_loss = 0
@@ -21,7 +22,6 @@ def fit_one_epoch(model, train_util, loss_history, optimizer, epoch, epoch_step,
                 images = torch.from_numpy(images).type(torch.FloatTensor)
                 if cuda:
                     images = images.cuda()
-
             rpn_loc, rpn_cls, roi_loc, roi_cls, total = train_util.train_step(images, boxes, labels, 1)
             total_loss      += total.item()
             rpn_loc_loss    += rpn_loc.item()
@@ -61,4 +61,6 @@ def fit_one_epoch(model, train_util, loss_history, optimizer, epoch, epoch_step,
     loss_history.append_loss(total_loss / epoch_step, val_loss / epoch_step_val)
     print('Epoch:'+ str(epoch+1) + '/' + str(Epoch))
     print('Total Loss: %.3f || Val Loss: %.3f ' % (total_loss / epoch_step, val_loss / epoch_step_val))
+    # import pdb;pdb.set_trace()
+    # if loss_history[-1] > total_loss / epoch_step:
     torch.save(model.state_dict(), 'logs/ep%03d-loss%.3f-val_loss%.3f.pth' % (epoch + 1, total_loss / epoch_step, val_loss / epoch_step_val))

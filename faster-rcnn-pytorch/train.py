@@ -60,7 +60,8 @@ if __name__ == "__main__":
     #   网络一般不从0开始训练，至少会使用主干部分的权值，有些论文提到可以不用预训练，主要原因是他们 数据集较大 且 调参能力优秀。
     #   如果一定要训练网络的主干部分，可以了解imagenet数据集，首先训练分类模型，分类模型的 主干部分 和该模型通用，基于此进行训练。
     #----------------------------------------------------------------------------------------------------------------------------#
-    model_path      = 'model_data/voc_weights_resnet.pth'
+    # model_path      = 'model_data/voc_weights_resnet.pth'
+    model_path = 'logs/ep050-loss0.772-val_loss0.823.pth'
     #------------------------------------------------------#
     #   输入的shape大小
     #------------------------------------------------------#
@@ -179,13 +180,12 @@ if __name__ == "__main__":
                         
         epoch_step      = num_train // batch_size
         epoch_step_val  = num_val // batch_size
-        
+        # import pdb;pdb.set_trace()
         if epoch_step == 0 or epoch_step_val == 0:
             raise ValueError("数据集过小，无法进行训练，请扩充数据集。")
         
         optimizer       = optim.Adam(model_train.parameters(), lr, weight_decay = 5e-4)
         lr_scheduler    = optim.lr_scheduler.StepLR(optimizer, step_size = 1, gamma = 0.96)
-
         train_dataset   = FRCNNDataset(train_lines, input_shape, train = True)
         val_dataset     = FRCNNDataset(val_lines, input_shape, train = False)
         gen             = DataLoader(train_dataset, shuffle = True, batch_size = batch_size, num_workers = num_workers, pin_memory=True,
@@ -221,7 +221,7 @@ if __name__ == "__main__":
         epoch_step_val  = num_val // batch_size
         
         if epoch_step == 0 or epoch_step_val == 0:
-            raise ValueError("数据集过小，无法进行训练，请扩充数据集。")
+            raise ValueError("数据集过小，无法进行训练，请扩充数据集。默")
 
         optimizer       = optim.Adam(model_train.parameters(), lr, weight_decay = 5e-4)
         lr_scheduler    = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma = 0.96)

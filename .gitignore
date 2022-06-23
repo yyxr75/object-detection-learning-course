@@ -2,3 +2,8 @@
 __pycache__/
 *.pth
 *.pyc
+data/
+VOC2007/
+*.txt
+logs/
+map_out/

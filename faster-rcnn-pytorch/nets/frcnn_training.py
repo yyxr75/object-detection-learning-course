@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from torch import nn
 from torch.nn import functional as F
-
+import time
 
 def bbox_iou(bbox_a, bbox_b):
     if bbox_a.shape[1] != 4 or bbox_b.shape[1] != 4:
@@ -39,6 +39,7 @@ def bbox2loc(src_bbox, dst_bbox):
 
     loc = np.vstack((dx, dy, dw, dh)).transpose()
     return loc
+
 
 class AnchorTargetCreator(object):
     def __init__(self, n_sample=256, pos_iou_thresh=0.7, neg_iou_thresh=0.3, pos_ratio=0.5):
@@ -239,6 +240,8 @@ class FasterRCNNTrainer(nn.Module):
         #-------------------------------#
         #   获取公用特征层
         #-------------------------------#
+        # import pdb;
+        # pdb.set_trace()
         base_feature = self.faster_rcnn.extractor(imgs)
 
         # -------------------------------------------------- #
@@ -320,8 +323,13 @@ class FasterRCNNTrainer(nn.Module):
 
     def train_step(self, imgs, bboxes, labels, scale):
         self.optimizer.zero_grad()
+        start_time = time.time()
         losses = self.forward(imgs, bboxes, labels, scale)
+        time1 = time.time()
+        print('forward time: {}'.format(time1-start_time))
         losses[-1].backward()
+        time2 = time.time()
+        print('backward time: {}'.format(time2-time1))
         self.optimizer.step()
         return losses
 
