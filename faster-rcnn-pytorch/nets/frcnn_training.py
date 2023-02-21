@@ -330,16 +330,13 @@ class FasterRCNNTrainer(nn.Module):
 
     def train_step(self, imgs, bboxes, labels, scale):
         self.optimizer.zero_grad()
-<<<<<<< HEAD
         start_time = time.time()
-        losses = self.forward(imgs, bboxes, labels, scale)
+        # losses = self.forward(imgs, bboxes, labels, scale)
         time1 = time.time()
         print('forward time: {}'.format(time1-start_time))
-=======
 
         losses = self.forward(imgs, bboxes, labels, scale)
         # 这就是反向传播吗
->>>>>>> 309e4c4cb016aeeb1247ab2aceb3c0804cbab6af
         losses[-1].backward()
         time2 = time.time()
         print('backward time: {}'.format(time2-time1))

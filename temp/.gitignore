@@ -1,0 +1,5 @@
+# 忽略的文件类型
+*.rar
+*.asv
+/save_data
+/main/cascade/input/20211112
